@@ -64,4 +64,27 @@ export class StockController {
     ){
         return this.stockService.updateQuantityOfProduct(stockId, productID, idPallet, qty)
     }
+
+    @Post('/getProductsInStock')
+    async getProductInStock (
+        @Body("stockId") stockId: string
+    ){
+        return this.stockService.getProductsInStock(stockId)
+    }
+
+    @Post('/getProductPalletsById')
+    async getProductPalletsById ( 
+        @Body("productID") productId: string,
+        @Body("stockId") stockId: string
+    )
+    {
+        return this.stockService.getProductPalletsByProductID(productId, stockId)
+    }
+
+    @Post('/getProductsInStockOnlySomeFields')
+    async getProductInStockOnlySomeFields(
+        @Body("stockId") stockId: string
+    ){
+        return this.stockService.getProductsInStockOnlySomeFields(stockId)
+    }
 }

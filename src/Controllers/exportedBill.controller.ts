@@ -34,4 +34,15 @@ export class ExportedBillController{
     ){
         return this.exportedBillService.addProductToExportedBill(stockId, billId, listOfProduct)
     }
+
+    @Post('/ReportNumberExportedProduct')
+    async NumberOfExportedProduct (
+        @Body('stockId') stockId: string,
+        @Body('dateFrom') dateFr: string,
+        @Body('dateTo') dateT: string
+    ){
+        var dateFrom = new Date(dateFr).getTime()
+        var dateTo = new Date(dateT).getTime()
+        return this.exportedBillService.NumberOfExportedProductReport(stockId, dateFrom, dateTo)
+    }
 }

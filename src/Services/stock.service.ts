@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/mongoose'
 import { Model } from 'mongoose'
 
 import { Stock } from '../Models/stock.model'
+import { exec } from 'child_process';
 
 
 @Injectable()
@@ -151,7 +152,7 @@ export class StockService {
             }
         }
 
-        stockModel.findOneAndUpdate(
+        var process =  await stockModel.findOneAndUpdate(
             condition,
             {
                 $push: {
@@ -181,17 +182,18 @@ export class StockService {
                         }
                     }
                 }
-            },
-            function (err, result) {
-                if (err) {
-                    console.log(err)
-                } else {
-                    console.log(result)
-                }
             }
-        )
-    }
+        ).exec()
+        console.log(process)
 
+        var process2 = await process.goods.filter(item => {
+            if(item.productID === productId){
+                return item
+            }
+        })
+        // console.log(process2)
+        return process2
+    }
 
     async updatePalletOfProduct(stockId, productId, idPallet, palletObject) {
         var stockModel = this.stockModel
@@ -276,52 +278,69 @@ export class StockService {
             }
         )
         return outputResult
-// su dung transaction
-        // try {
-        //     const session = await this.stockModel.db.startSession()
-        //     session.startTransaction({
-        //         readConcern: { level: 'snapshot' },
-        //         writeConcern: { w: 'majority' },
-        //         readPreference: 'primary'
-        //     })
-        //     try {
-        //         console.log(stockId, productId, idPallet, quantity)
-        //         var outputResult
-        //         await this.stockModel.updateOne(
-        //             {
-        //                 stockId: stockId
-        //             },
-        //             {
-        //                 $inc: {
-        //                     'goods.$[a].pallets.$[b].qty': quantity
-        //                 }
-        //             }, {
-        //             multi: true,
-        //             new: true,
-        //             upsert: true,
-        //             "arrayFilters": [{ "a.productID": productId }, { "b.idPallet": idPallet }]
-        //         },
-
-        //             function (err, result) {
-        //                 if (err) {
-        //                     console.log(err)
-        //                     outputResult = { message: "loi he thong: " + err }
-        //                 } else {
-        //                     console.log(result)
-        //                     outputResult = { message: "Update san pham thanh cong" }
-        //                 }
-        //             }
-        //         ).session(session)
-        //         .exec()
-        //         return outputResult
-        //     } catch (err) {
-        //         await session.abortTransaction();
-        //         console.log("stage1: " + err)
-        //     } finally {
-        //         session.endSession()
-        //     }
-        // } catch (err) {
-        //     console.log("stage2: ")
-        // }
     }
+
+    async getProductsInStock(stockId){
+        var stockModel = this.stockModel
+        var result = await stockModel.findOne(
+            {stockId: stockId},
+            {
+                "_id": 0,
+                "stockId": 1,
+                "goods.productID": 1,
+                "goods.productName": 1,
+                "goods.productGroup": 1,
+                "goods.pallets.idPallet": 1,
+                "goods.pallets.palletDate": 1,
+                "goods.pallets.qty": 1,
+                "goods.pallets.price.inputPrice": 1,
+                "goods.pallets.price.outputPrice": 1,
+                "goods.pallets.size.unit": 1,
+                "goods.pallets.size.qtyPerBox": 1,
+                "goods.pallets.supplier.supplierName": 1,
+            }
+        ).exec()
+        console.log(result)
+        return result
+    }
+
+    async getProductPalletsByProductID(productId, stockId) {
+        let findProduct = await this.stockModel.aggregate([
+            {
+                $match: {
+                    stockId: stockId
+                }
+            },
+            {
+                $unwind: "$goods"
+            },
+            {
+                $match: {
+                    "goods.productID": productId
+                }
+            }
+        ])
+        .exec()
+        console.log(findProduct)
+        return findProduct
+    }
+
+    async getProductsInStockOnlySomeFields(stockId){
+        var stockModel = this.stockModel
+        var result = await stockModel.findOne(
+            {stockId: stockId},
+            {
+                "_id": 0,
+                "stockId": 1,
+                "goods.productID": 1,
+                "goods.productName": 1
+            }
+        ).exec()
+        console.log(result)
+        return result
+    }
+
+    // async checkProductExist (stockId, produtcId) {
+        
+    // }
 }

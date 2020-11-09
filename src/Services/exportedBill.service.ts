@@ -246,7 +246,7 @@ export class ExportedBillService {
                         }, { new: true, session },
                     ),
 
-                    console.log("test inner1")
+                        console.log("test inner1")
 
                     console.log(item.productID, item.quantity, stockId, item.palletID)
                     await stockModel.updateOne(
@@ -285,5 +285,58 @@ export class ExportedBillService {
         } catch (err) {
             console.error("loi he thong 2: " + err)
         }
+    }
+
+
+    async NumberOfExportedProductReport(stockId, dateFrom, dateTo){
+        var exportedBillModel = this.exportedBillModel
+        console.log(dateFrom + "datefrom")
+        console.log(dateTo + "dateTo")
+
+        var process2 = await exportedBillModel.aggregate([
+            {
+                $match: {
+                    stockId: stockId
+                }
+            },
+            {
+                $unwind: "$listOfBill"
+            },
+            {
+               $unwind: "$listOfBill.detailBill"
+            },
+            {
+                $project: {
+                    dateG: {
+                        $gte: ["$listOfBill.exportedDate",dateFrom]
+                    },
+                    dateL: {
+                        $lte: ["$listOfBill.exportedDate",dateTo]
+                    },
+                    productName: "$listOfBill.detailBill.productName",
+                    quantity: "$listOfBill.detailBill.quantity",  
+                }
+            },
+            {
+                $facet: {
+                    "arrayProduct": [
+                        {$group: {_id: "$productName", total: {$sum: "$quantity"}}},
+                        {$project: {_id: 0, productName: "$_id", quantity: "$total"}}
+                    ]
+                }
+            }
+        ]).exec(function (err, result) {
+            if (err) {
+                console.log(err)
+            } else {
+                // console.log(result)
+                result.forEach(item => {
+                    // console.log(item.arrayProduct)
+                    item.arrayProduct.forEach(item => {
+                        console.log(item)
+                    })
+                })
+            }
+        })
     }
 }
